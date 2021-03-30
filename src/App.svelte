@@ -24,6 +24,8 @@
 
 	data.forEach(d => {
       d.pct_change = Math.min(d.pct_change, -.25);
+      // This formula for radius isn't accurate but roughly
+      // copies the NY Times version.
       d.r = Math.sqrt(d.pop) / 200 + .5;
     });
 
