@@ -14,7 +14,7 @@
         .domain([-0.75, -0.5, -0.25]);
 
   $: series = [1,0].map(in_lockdown =>
-        new AccurateBeeswarm($data.filter(d=>d.in_lockdown==in_lockdown), d => (d.r + .33) * (.5 + $width / 2000), $xGet)
+        new AccurateBeeswarm($data.filter(d=>d.in_lockdown==in_lockdown), d => (d.r + .3) * (.5 + $width / 2000), $xGet)
 			.withTiesBrokenRandomly()
 //			.oneSided()
 			.calculateYPositions()
@@ -31,6 +31,7 @@
             this.tieBreakFn = x => x;
             this._oneSided = false;
             this.maxR = Math.max(...items.map(d => radiusFun(d)));
+            this.rng = this._sfc32(1,2,3,4);
         }
     
         withTiesBrokenRandomly() {
@@ -49,6 +50,7 @@
                 originalIndex: i,
                 x: this.xFun(d),
                 y: null,
+                overlappedHorizontally: false,
                 placed: false,
                 forbiddenY: new UnionOfIntervals(),
                 score: 0,
@@ -63,7 +65,12 @@
             while (!pq.isEmpty()) {
                 let item = pq.pop();
                 item.placed = true;
-                item.y = item.bestPosition;
+                // If nothing placed overlaps this circle on the x axis (even if
+                // they were side by side), choose the y position at random.  This
+                // makes the plot look a bit more natural and less like the Mandelbrot
+                // set!
+                item.y = item.overlappedHorizontally ? item.bestPosition :
+                        this.radiusFun(item.datum) * (this.rng() - .5) * 3;
                 this._updateYBounds(item, all, pq);
             }
             all.sort((a, b) => a.originalIndex - b.originalIndex);
@@ -105,6 +112,7 @@
                     let sumOfRadii = r + this.radiusFun(other.datum);
                     if (xDist >= r + this.radiusFun(other.datum))
                         continue;
+                    other.overlappedHorizontally = true;
                     let yDist = Math.sqrt(sumOfRadii * sumOfRadii - xDist * xDist);
                     let forbiddenInterval = [item.y - yDist, item.y + yDist];
                     other.forbiddenY.addInterval(forbiddenInterval);
@@ -250,8 +258,9 @@
         _greater(i, j) {
             let a = this._heap[i];
             let b = this._heap[j];
-            let ra = this.radiusFun(a.datum) + a.tieBreaker * 5 - a.score * 0.1;
-            let rb = this.radiusFun(b.datum) + b.tieBreaker * 5 - b.score * 0.1;
+            // The 5 in the following line was just chosen to make the plots look nice
+            let ra = this.radiusFun(a.datum) + a.tieBreaker * 5;
+            let rb = this.radiusFun(b.datum) + b.tieBreaker * 5;
             if (ra > rb) return true;
             if (ra < rb) return false;
             if (a.score < b.score) return true;

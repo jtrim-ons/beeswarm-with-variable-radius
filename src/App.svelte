@@ -24,7 +24,7 @@
 
 	data.forEach(d => {
       d.pct_change = Math.min(d.pct_change, -.25);
-      d.r = Math.sqrt(d.pop) / 180;
+      d.r = Math.sqrt(d.pop) / 200 + .5;
     });
 
 	const addCommas = format(',');
@@ -56,6 +56,7 @@
 				baseline={true}
 				formatTick={addCommas}
 				tickMarks={true}
+				gridlines={false}
 			/>
 			<Beeswarm
 				spacing={1}
